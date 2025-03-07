@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Cloning</title>
+</head>
+<body>
+    <h2>Upload Your Voice Sample</h2>
+    <input type="file" id="audioFile">
+    <button onclick="uploadAudio()">Upload</button>
+
+    <h2>Generate Cloned Speech</h2>
+    <input type="text" id="textInput" placeholder="Enter text">
+    <button onclick="synthesizeVoice()">Generate</button>
+
+    <h2>Output Audio</h2>
+    <audio id="outputAudio" controls></audio>
+
+    <script>
+        async function uploadAudio() {
+            const fileInput = document.getElementById("audioFile").files[0];
+            if (!fileInput) {
+                alert("Please select a file!");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("input_file.wav", fileInput); // Match Flask `request.files`
+  // ✅ Fixed key
+
+            try {
+                let response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+                if (response.ok) {
+                    alert("File uploaded successfully!");
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (error) {
+                alert("Upload failed!");
+            }
+        }
+
+        async function synthesizeVoice() {
+            const textInput = document.getElementById("textInput").value;
+            if (!textInput) {
+                alert("Enter text before generating speech!");
+                return;
+            }
+
+            try {
+                let response = await fetch("/synthesize", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: textInput })
+                });
+
+                if (!response.ok) {
+                    let errorData = await response.json();
+                    alert("Error: " + errorData.error);
+                    return;
+                }
+
+                let blob = await response.blob();
+                document.getElementById("outputAudio").src = URL.createObjectURL(blob);
+            } catch (error) {
+                alert("Failed to generate speech!");
+            }
+        }
+    </script>
+</body>
+</html>
+
